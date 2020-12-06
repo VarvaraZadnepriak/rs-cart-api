@@ -5,6 +5,12 @@
 # Specify also minor version for compatibility and new features (except patches)
 FROM node:12.19-alpine AS base
 
+RUN apk --no-cache add curl
+RUN apk add --no-cache bash
+
+# install node-prune (https://github.com/tj/node-prune)
+RUN curl -sfL https://install.goreleaser.com/github.com/tj/node-prune.sh | bash -s -- -b /usr/local/bin
+
 # Create app directory
 WORKDIR /app
 
@@ -13,7 +19,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (both dependencies and devDependencies) for build
-RUN npm install
+RUN npm ci
 
 # Bundle app source. All files that we do not need during the build were excluded
 # from build context via .dockerignore file
@@ -22,14 +28,18 @@ COPY . .
 # Run the production build
 RUN npm run build
 
+# remove development dependencies
+RUN npm prune --production
+
+# run node prune
+RUN /usr/local/bin/node-prune
+
 # Use multi-stage build to optimize Docker image (copy only necessary files from base image)
 FROM node:12-alpine AS service
 
 # Copy package.json and package-lock,json
 COPY --from=base /app/package*.json ./
-
-# Install npm modules for production image (npm ci)
-RUN npm ci --only=production
+COPY --from=base /app/node_modules ./node_modules
 COPY --from=base /app/dist ./dist
 
 USER node
