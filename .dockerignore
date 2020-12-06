@@ -1,13 +1,15 @@
+# Application generated folders
 node_modules
+coverage
+dist
 npm-debug.log
 
+
+# Files that do not need during the production build
+.ebextensions
+.elasticbeanstalk
 .eslintrc.js
 .prettierrc
-
-README.md
-
-test
-
-dist
-
 .env
+README.md
+test
